@@ -1,11 +1,10 @@
-use super::*;
-use bitvec::prelude::*;
+use crate::*;
 
 /// A floating point number, also contains the format information.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct Float {
     pub format: Format,
-    pub bits: BitVec<usize, Msb0>,
+    pub bits: BitPattern,
 }
 
 impl Float {
@@ -15,7 +14,7 @@ impl Float {
     /// 
     /// * `format` - The format of the float.
     /// * `bits` - The bit pattern of the float.
-    pub fn from_bitvec(format: Format, bits: BitVec<usize, Msb0>) -> Float {
+    pub fn from_bits(format: Format, bits: BitPattern) -> Float {
         Float {
             format,
             bits,
@@ -29,54 +28,69 @@ impl Float {
     /// * `format` - The format of the float.
     /// * `comps` - The components of the float.
     pub fn from_comps(format: Format, comps: Components) -> Result<Float, error::Error> {
-        let mut bits = BitVec::<usize, Msb0>::new();
+        let mut bits = BitPattern::new();
+
+        let comps_format = comps.format();
+
+        if format.signed != comps_format.signed {
+            return Err(error::Error::MismatchedSignBit);
+        }
 
         if let Some(neg) = comps.neg {
             bits.push(neg);
         }
 
-        let exp_len = comps.exp.len();
-        let mant_len = comps.mant.len();
+        let exp = comps.exp.iter();
+        let mant = comps.mant.iter();
 
-        let exp = comps.exp.chars().map(|c| c == '1');
-        let mant = comps.mant.chars().map(|c| c == '1');
-
-        if exp_len < format.exp as usize {
-            bits.extend(std::iter::repeat(false).take(format.exp as usize - exp_len));
+        if comps_format.exp < format.exp {
+            bits.extend(std::iter::repeat(false).take((format.exp - comps_format.exp) as usize));
             bits.extend(exp);
-        } else if exp.clone().take(exp_len - format.exp as usize).any(|b| b == true) {
+        } else if exp
+            .clone()
+            .take((comps_format.exp - format.exp) as usize)
+            .any(|b| b == true)
+        {
             return Err(error::Error::InsufficientExponentBits);
         } else {
-            bits.extend(exp.skip(exp_len - format.exp as usize));
+            bits.extend(exp.skip((comps_format.exp - format.exp) as usize));
         }
 
-        if mant_len < format.mant as usize {
-            bits.extend(std::iter::repeat(false).take(format.mant as usize - mant_len));
+        if comps_format.mant < format.mant {
+            bits.extend(std::iter::repeat(false).take((format.mant - comps_format.mant) as usize));
             bits.extend(mant);
-        } else if mant.clone().take(mant_len - format.mant as usize).any(|b| b == true) {
+        } else if mant
+            .clone()
+            .take((comps_format.mant - format.mant) as usize)
+            .any(|b| b == true)
+        {
             return Err(error::Error::InsufficientMantissaBits);
         } else {
-            bits.extend(mant.skip(mant_len - format.mant as usize));
+            bits.extend(mant.skip((comps_format.mant - format.mant) as usize));
         }
 
-        Ok(Float::from_bitvec(format, bits))
+        Ok(Float::from_bits(format, bits))
     }
 
     /// Create from the given field bit patterns.
+    /// The format is automatically deduced from the components.
     /// 
     /// # Arguments
     /// 
     /// * `neg` - Whether the number is signed and the sign.
     /// * `exp` - The exponent bit pattern of the number.
     /// * `mant` - The mantissa bit pattern of the number.
-    pub fn from_fields(neg: Option<bool>, exp: String, mant: String) -> Result<Float, error::Error> {
+    /// * `excess` - The excess value of the number.
+    pub fn from_fields(neg: Option<bool>, exp: &str, mant: &str, excess: i32) -> Result<Float, error::Error> {
+        let comps = Components::new(
+            neg,
+            exp,
+            mant,
+        )?;
+
         Float::from_comps(
-            Format::ieee_binary32(),
-            Components {
-                neg,
-                exp,
-                mant,
-            }
+            comps.format_with_excess(excess),
+            comps
         )
     }
     
@@ -91,15 +105,8 @@ impl Float {
             false => None,
         };
 
-        let exp = self.bits[exp_range]
-            .into_iter()
-            .map(|b| if b == true { '1' } else { '0' })
-            .collect::<String>();
-
-        let mant = self.bits[mant_range]
-            .into_iter()
-            .map(|b| if b == true { '1' } else { '0' })
-            .collect::<String>();
+        let exp = self.bits[exp_range].to_owned();
+        let mant = self.bits[mant_range].to_owned();
 
         Components { neg, exp, mant }
     }
@@ -109,8 +116,8 @@ impl Float {
     pub fn as_f32(&self) -> f32 {
         let Components { neg, exp, mant } = self.to_comps();
 
-        let exp = i32::from_str_radix(&exp, 2).unwrap();
-        let mant = u128::from_str_radix(&mant, 2).unwrap();
+        let exp = i32::from_str_radix(&exp.into_bin_string(), 2).unwrap();
+        let mant = u128::from_str_radix(&mant.into_bin_string(), 2).unwrap();
 
         let sign = match neg {
             Some(true) => -1f32,
@@ -118,7 +125,7 @@ impl Float {
             None => 1f32,
         };
 
-        let exp = 2f32.powi((exp - self.format.exp_excess) as i32);
+        let exp = 2f32.powi((exp - self.format.excess) as i32);
         let mant = mant as f32 / (2f32.powi(self.format.mant as i32)) + 1f32;
 
         sign * exp * mant
@@ -129,8 +136,8 @@ impl Float {
     pub fn as_f64(&self) -> f64 {
         let Components { neg, exp, mant } = self.to_comps();
 
-        let exp = i32::from_str_radix(&exp, 2).unwrap();
-        let mant = u128::from_str_radix(&mant, 2).unwrap();
+        let exp = i32::from_str_radix(&exp.into_bin_string(), 2).unwrap();
+        let mant = u128::from_str_radix(&mant.into_bin_string(), 2).unwrap();
 
         let sign = match neg {
             Some(true) => -1f64,
@@ -138,7 +145,7 @@ impl Float {
             None => 1f64,
         };
 
-        let exp = 2f64.powi((exp - self.format.exp_excess) as i32);
+        let exp = 2f64.powi((exp - self.format.excess) as i32);
         let mant = mant as f64 / (2f64.powi(self.format.mant as i32)) + 1f64;
 
         sign * exp * mant
@@ -150,7 +157,7 @@ impl From<f32> for Float {
     fn from(f: f32) -> Float {
         let bits = f.to_bits();
         let format = Format::ieee_binary32();
-        Float::from_bitvec(format, bits.view_bits::<Msb0>().iter().collect())
+        Float::from_bits(format, BitPattern::from_value(bits))
     }
 }
 
@@ -159,6 +166,6 @@ impl From<f64> for Float {
     fn from(f: f64) -> Float {
         let bits = f.to_bits();
         let format = Format::ieee_binary64();
-        Float::from_bitvec(format, bits.view_bits::<Msb0>().iter().collect())
+        Float::from_bits(format, BitPattern::from_value(bits))
     }
 }

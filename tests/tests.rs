@@ -4,16 +4,26 @@ use float_format::*;
 fn print_test() {
     let float = Float::from_comps(
         Format::ieee_binary32(),
-        Components {
-            neg: Some(false),
-            exp: format!("{:b}", 128),
-            mant: format!("{:b}", 1234567),
-        }
+        Components::new_bin(
+            Some(false),
+            format!("{:b}", 128).as_str(),
+            format!("{:b}", 1234567).as_str(),
+        ).unwrap()
     ).unwrap();
 
     println!("{:?}", float);
     println!("{:?}", float.to_comps());
     println!("{:.64}", float.as_f64());
+
+    let float = Float::from_fields(
+        Some(false),
+        format!("0b{:0>8b}", 128).as_str(),
+        format!("0b{:0>23b}", 1234567).as_str(),
+        127,
+    ).unwrap();
+
+    println!("{:?}", float);
+    println!("{:?}", float.to_comps());
     println!("{:.64}", float.as_f64());
 
     let float = Float::from(2.2943437099456787109375f32);
