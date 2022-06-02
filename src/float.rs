@@ -103,22 +103,10 @@ impl Float {
 
         Components { neg, exp, mant }
     }
-}
-
-impl From<f32> for Float {
-    /// Create from the given `f32`, using IEEE binary32 format.
-    fn from(f: f32) -> Float {
-        let bits = f.to_bits();
-        let format = Format::ieee_binary32();
-        Float::from_bitvec(format, bits.view_bits::<Msb0>().iter().collect())
-    }
-}
-
-impl Into<f32> for Float {
-    /// Convert into a `f32`.
-    /// May cause a lost of information.
-    /// May panic.
-    fn into(self) -> f32 {
+    
+    /// Create a `f32` from the given `Float`.
+    /// The result may has a lost of information.
+    pub fn as_f32(&self) -> f32 {
         let Components { neg, exp, mant } = self.to_comps();
 
         let exp = i32::from_str_radix(&exp, 2).unwrap();
@@ -135,22 +123,10 @@ impl Into<f32> for Float {
 
         sign * exp * mant
     }
-}
 
-impl From<f64> for Float {
-    /// Create from the given `f64`, using IEEE binary64 format.
-    fn from(f: f64) -> Float {
-        let bits = f.to_bits();
-        let format = Format::ieee_binary64();
-        Float::from_bitvec(format, bits.view_bits::<Msb0>().iter().collect())
-    }
-}
-
-impl Into<f64> for Float {
-    /// Convert into a `f64`.
-    /// May cause a lost of information.
-    /// May panic.
-    fn into(self) -> f64 {
+    /// Create a `f64` from the given `Float`.
+    /// The result may has a lost of information.
+    pub fn as_f64(&self) -> f64 {
         let Components { neg, exp, mant } = self.to_comps();
 
         let exp = i32::from_str_radix(&exp, 2).unwrap();
@@ -166,5 +142,23 @@ impl Into<f64> for Float {
         let mant = mant as f64 / (2f64.powi(self.format.mant as i32)) + 1f64;
 
         sign * exp * mant
+    }
+}
+
+impl From<f32> for Float {
+    /// Create from the given `f32`, using IEEE binary32 format.
+    fn from(f: f32) -> Float {
+        let bits = f.to_bits();
+        let format = Format::ieee_binary32();
+        Float::from_bitvec(format, bits.view_bits::<Msb0>().iter().collect())
+    }
+}
+
+impl From<f64> for Float {
+    /// Create from the given `f64`, using IEEE binary64 format.
+    fn from(f: f64) -> Float {
+        let bits = f.to_bits();
+        let format = Format::ieee_binary64();
+        Float::from_bitvec(format, bits.view_bits::<Msb0>().iter().collect())
     }
 }
