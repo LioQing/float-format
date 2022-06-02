@@ -4,6 +4,9 @@ author = ["lioqing"]
 version = "0.1.0"
 edition = "2021"
 description = "A library for custom floating point number format"
+keywords = ["float", "format", "layout", "custom", "number"]
+categories = ["encoding", "mathematics", "data-structures", "memory-management"]
+repository = "https://github.com/LioQing/float-format"
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
