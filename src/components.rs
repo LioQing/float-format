@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Components {
     /// The sign of the number, `Some(true)` if negative, `None` if the format is unsigned.
-    pub neg: Option<bool>,
+    pub sign: Option<bool>,
 
     /// The exponent bit pattern of the number, assumed to be `String` with '1's and '0's.
     pub exp: BitPattern,
@@ -14,44 +14,56 @@ pub struct Components {
 }
 
 impl Components {
-    /// Create from the given values for `neg`, `exp`, and `mant`.
+    /// Create from the given values for `sign`, `exp`, and `mant`.
     /// The radix of `exp` and `mant` is deduced from the first 2 chars.
-    /// '0b' => binary, '0x' => hexadecimal, ('0o' => octal, '0d' => decimal to be supported).
-    pub fn new(neg: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
+    /// '0b' => binary, '0x' => hexadecimal, '0o' => octal.
+    pub fn new(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
-            neg,
+            sign,
             exp: BitPattern::from_str(exp)?,
             mant: BitPattern::from_str(mant)?,
         })
     }
 
-    /// Create from the given values for `neg`, `exp`, and `mant`.
-    /// The `exp` and `mant` are assumed to be `String` with '1's and '0's.
-    pub fn new_bin(neg: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
+    /// Create from the given values for `sign`, `exp`, and `mant`.
+    /// The `exp` and `mant` should be `String` with '1's and '0's.
+    /// Any characters other than '0' and '1' are ignored.
+    pub fn new_bin(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
-            neg,
+            sign,
             exp: BitPattern::from_bin_str(exp)?,
             mant: BitPattern::from_bin_str(mant)?,
         })
     }
 
-    /// Create from the given values for `neg`, `exp`, and `mant`.
-    /// The `exp` and `mant` are assumed to be `String` with hexadecimal digits.
-    /// Any char that is not a hexadecimal digit is ignored.
-    pub fn new_hex(neg: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
+    /// Create from the given values for `sign`, `exp`, and `mant`.
+    /// The `exp` and `mant` should be `String` with octal digits.
+    /// Any characters other than octal digits are ignored.
+    pub fn new_oct(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
-            neg,
+            sign,
+            exp: BitPattern::from_oct_str(exp)?,
+            mant: BitPattern::from_oct_str(mant)?,
+        })
+    }
+
+    /// Create from the given values for `sign`, `exp`, and `mant`.
+    /// The `exp` and `mant` should be `String` with hexadecimal digits.
+    /// Any characters other than hexadecimal digits are ignored.
+    pub fn new_hex(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
+        Ok(Components {
+            sign,
             exp: BitPattern::from_hex_str(exp)?,
             mant: BitPattern::from_hex_str(mant)?,
         })
     }
 
     /// Get the format of the components with the given `excess`.
-    pub fn format_with_excess(&self, excess: i32) -> Format {
+    pub fn format_with_excess(&self, excess: u64) -> Format {
         Format::new_with_sign(
-            self.neg.is_some(),
-            self.exp.len() as u32,
-            self.mant.len() as u32,
+            self.sign.is_some(),
+            self.exp.len(),
+            self.mant.len(),
             excess
         )
     }
@@ -64,6 +76,6 @@ impl Components {
 
     /// Get the number of bits for the format.
     pub fn len(&self) -> usize {
-        self.neg.is_some() as usize + self.exp.len() + self.mant.len()
+        self.sign.is_some() as usize + self.exp.len() + self.mant.len()
     }
 }

@@ -10,6 +10,7 @@ pub trait BitPatternExt where Self: Sized {
 
     fn from_str(s: &str) -> Result<Self, error::Error>;
     fn from_bin_str(s: &str) -> Result<Self, error::Error>;
+    fn from_oct_str(s: &str) -> Result<Self, error::Error>;
     fn from_hex_str(s: &str) -> Result<Self, error::Error>;
 
     fn to_bin_string(&self) -> String;
@@ -31,31 +32,39 @@ impl BitPatternExt for BitPattern {
 
         match s[0..2].as_ref() {
             "0b" => Ok(Self::from_bin_str(&s[2..])?),
+            "0o" => Ok(Self::from_oct_str(&s[2..])?),
             "0x" => Ok(Self::from_hex_str(&s[2..])?),
             _ => Err(error::Error::InvalidRadixPrefix),
         }
     }
     
     fn from_bin_str(s: &str) -> Result<Self, error::Error> {
-        if s.chars().any(|c| !c.is_digit(2)) {
-            return Err(error::Error::InvalidDigit(2));
-        }
-
         Ok(s
             .chars()
+            .filter(|c| c.is_digit(2))
+            .map(|c| c == '1')
+            .collect()
+        )
+    }
+
+    fn from_oct_str(s: &str) -> Result<Self, error::Error> {
+        Ok(s
+            .chars()
+            .filter(|c| c.is_digit(8))
+            .flat_map(|c| format!("{:3b}", c.to_digit(8).unwrap())
+                .chars()
+                .collect::<Vec<_>>()
+            )
             .map(|c| c == '1')
             .collect()
         )
     }
     
     fn from_hex_str(s: &str) -> Result<Self, error::Error> {
-        if s.chars().any(|c| !c.is_digit(16)) {
-            return Err(error::Error::InvalidDigit(16));
-        }
-
         Ok(s
             .chars()
-            .flat_map(|c| format!("{:4b}", c.to_digit(16).unwrap() as u8)
+            .filter(|c| c.is_digit(16))
+            .flat_map(|c| format!("{:4b}", c.to_digit(16).unwrap())
                 .chars()
                 .collect::<Vec<_>>()
             )

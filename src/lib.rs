@@ -14,7 +14,7 @@ pub use float::Float;
 mod components;
 pub use components::Components;
 
-pub mod utils;
-pub(crate) use utils::*;
+mod utils;
+pub use utils::*;
 
 pub mod error;

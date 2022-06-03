@@ -14,6 +14,6 @@ pub enum Error {
     #[error("invalid or missing radix prefix")]
     InvalidRadixPrefix,
 
-    #[error("invalid digit for radix {0}")]
-    InvalidDigit(u32),
+    #[error("insufficient bits to store the given bit pattern")]
+    InsufficientBitsForBitPattern,
 }
