@@ -16,4 +16,13 @@ pub enum Error {
 
     #[error("insufficient bits to store the given bit pattern")]
     InsufficientBitsForBitPattern,
+
+    #[error("invalid number string given for parsing")]
+    ParseStringError,
+
+    #[error("number string out of range for format")]
+    OutOfRange,
+
+    #[error("negative sign for unsigned format")]
+    NegativeSign,
 }

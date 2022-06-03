@@ -1,4 +1,6 @@
 use crate::*;
+use fraction::prelude::*;
+use core::str::FromStr;
 
 /// A floating point number, also contains the format information.
 #[derive(Debug, Clone, Hash)]
@@ -8,6 +10,116 @@ pub struct Float {
 }
 
 impl Float {
+    /// Create from the given format and string.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `format` - The format of the number.
+    /// * `str` - The number in decimal form.
+    pub fn from_str(format: Format, s: &str) -> Result<Self, error::Error> {
+        // sign
+        match s.chars().next() {
+            Some('0'..='9' | '+' | '-') => {},
+            _ => return Err(error::Error::ParseStringError),
+        }
+
+        let sign = s.starts_with('-');
+        let s = if sign { &s[1..] } else { s };
+
+        if sign && !format.signed {
+            return Err(error::Error::NegativeSign);
+        }
+
+        let frac = BigFraction::from_str(s).map_err(|_| error::Error::ParseStringError)?;
+
+        // extract integral and fractional parts
+        let (mut int, mut frac) = (
+            BigUint::from(frac.clone().numer().unwrap() / frac.clone().denom().unwrap()),
+            frac.fract(),
+        );
+
+        let mut int_bits = String::new();
+        let mut frac_bits = String::new();
+
+        let exp: i32 = match int > BigUint::from(0u32) {
+            true => {
+                let mut exp = 0;
+
+                // get integral part
+                while int > BigUint::from(1u32) {
+                    int_bits.push(if int.clone() % BigUint::from(2u32) == BigUint::from(1u32) { '1' } else { '0' });
+                    int /= 2u32;
+                    exp += 1;
+                }
+
+                // get fractional part
+                while frac != BigFraction::from(0u32) && int_bits.len() + frac_bits.len() < format.mant {
+                    frac *= BigFraction::from(2u32);
+                    frac_bits.insert(0, if frac > BigFraction::from(1u32) { '1' } else { '0' });
+                    frac %= BigFraction::from(1u32);
+                }
+
+                exp
+            },
+            false => {
+                let mut exp = 0;
+
+                // remove leading zeros of fraction
+                loop {
+                    frac *= BigFraction::from(2u32);
+                    exp -= 1;
+
+                    if frac > BigFraction::from(1u32) {
+                        frac %= BigFraction::from(1u32);
+                        break;
+                    }
+                }
+
+                // get fractional part
+                while frac != BigFraction::from(0u32) && frac_bits.len() < format.mant {
+                    frac *= BigFraction::from(2u32);
+                    frac_bits.insert(0, if frac > BigFraction::from(1u32) { '1' } else { '0' });
+
+                    frac %= BigFraction::from(1u32);
+                }
+
+                exp
+            },
+        };
+
+        let len = int_bits.len() + frac_bits.len(); 
+
+        let int_bits = int_bits
+            .chars()
+            .rev()
+            .take(format.mant)
+            .collect::<String>();
+        
+        let frac_bits = frac_bits
+            .chars()
+            .rev()
+            .chain(std::iter::repeat('0').take(if len < format.mant {
+                format.mant - len
+            } else {
+                0
+            }))
+            .collect::<String>();
+
+        if exp < -(format.excess as i32) || exp >= 2i32.pow(format.exp as u32) - format.excess as i32 {
+            return Err(error::Error::OutOfRange);
+        }
+
+        let exp = (exp + format.excess as i32) as u32;
+
+        let signed = format.signed;
+        Self::from_fields(
+            format,
+            if signed { Some(sign) } else { None },
+            format!("0b0{:b}", exp).as_str(),
+            ("0b0".to_owned() + &int_bits + &frac_bits).as_str(),
+        )
+    }
+
     /// Create from the given format and bit pattern.
     /// 
     /// # Arguments
@@ -136,7 +248,7 @@ impl Float {
     pub fn as_f32(&self) -> f32 {
         let Components { sign, exp, mant } = self.to_comps();
 
-        let exp = i128::from_str_radix(&exp.into_bin_string(), 2).unwrap();
+        let exp = i32::from_str_radix(&exp.into_bin_string(), 2).unwrap();
         let mant = u128::from_str_radix(&mant.into_bin_string(), 2).unwrap();
 
         let sign = match sign {
@@ -145,8 +257,8 @@ impl Float {
             None => 1f32,
         };
 
-        let exp = 2f32.powi((exp - self.format.excess as i128) as i32);
-        let mant = mant as f32 / (2f32.powi(self.format.mant as i32)) + 1f32;
+        let exp = 2f32.powi((exp - self.format.excess as i32) as i32);
+        let mant = mant as f32 / num_traits::pow(2f32, self.format.mant) + 1f32;
 
         sign * exp * mant
     }
@@ -156,7 +268,7 @@ impl Float {
     pub fn as_f64(&self) -> f64 {
         let Components { sign, exp, mant } = self.to_comps();
 
-        let exp = i128::from_str_radix(&exp.into_bin_string(), 2).unwrap();
+        let exp = i32::from_str_radix(&exp.into_bin_string(), 2).unwrap();
         let mant = u128::from_str_radix(&mant.into_bin_string(), 2).unwrap();
 
         let sign = match sign {
@@ -165,8 +277,8 @@ impl Float {
             None => 1f64,
         };
 
-        let exp = 2f64.powi((exp - self.format.excess as i128) as i32);
-        let mant = mant as f64 / (2f64.powi(self.format.mant as i32)) + 1f64;
+        let exp = 2f64.powi((exp - self.format.excess as i32) as i32);
+        let mant = mant as f64 / num_traits::pow(2f64, self.format.mant) + 1f64;
 
         sign * exp * mant
     }
@@ -187,5 +299,82 @@ impl From<f64> for Float {
         let bits = f.to_bits();
         let format = Format::ieee_binary64();
         Float::from_bits(format, BitPattern::from_value(bits)).unwrap()
+    }
+}
+
+impl std::fmt::Display for Float {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let comps = self.to_comps();
+
+        // sign
+        let sign = match comps.sign {
+            Some(true) => "-",
+            _ => "",
+        };
+
+        // exp
+        let exp =
+            (i64::from_str_radix(&comps.exp.into_bin_string(), 2).unwrap() - self.format.excess as i64) as i32;
+
+        let exp = match exp < 0 {
+            true => BigFraction::new(BigUint::from(1u32), BigUint::from(2u32) << (-exp as usize - 1)),
+            false => BigFraction::from(BigUint::from(1u32) << (exp as usize)),
+        };
+
+        // mant
+        let frac = comps.mant
+            .iter()
+            .fold((BigUint::from(0u32), BigUint::from(0u32)),
+                |(numer, denom), b| {
+                    (
+                        numer * 2u32 + if b == true { 1u32 } else { 0u32 },
+                        denom * 2u32 + 1u32,
+                    )
+                }
+            );
+        
+        let frac =
+            BigFraction::from(1u32)
+            + BigFraction::new(frac.0, frac.1);
+        
+        let value = frac * exp;
+
+        // output, by default 6 significant digits
+        if let Some(prec) = f.precision() {
+            return write!(f, "{}{}", sign, format!("{:.1$}", value, prec))
+        }
+
+        if value > BigFraction::from(9999999u32) {
+            return write!(f, "{}{}", sign, BigUint::from(value.clone().numer().unwrap() / value.clone().denom().unwrap()))
+        }
+
+        let prec = if value > BigFraction::from(999999u32) {
+            1
+        } else if value > BigFraction::from(99999u32) {
+            2
+        } else if value > BigFraction::from(9999u32) {
+            3
+        } else if value > BigFraction::from(999u32) {
+            4
+        } else if value > BigFraction::from(99u32) {
+            5
+        } else if value > BigFraction::from(9u32) {
+            6
+        } else if value >= BigFraction::from(1u32) {
+            7
+        } else {
+            let mut value = value.fract();
+            let mut prec = 8;
+
+            loop {
+                value *= BigFraction::from(10u32);
+                if value.trunc() > BigFraction::from(0u32) {
+                    break prec;
+                }
+                prec += 1;
+            }
+        };
+
+        write!(f, "{}{}", sign, format!("{:.1$}", value, prec))
     }
 }

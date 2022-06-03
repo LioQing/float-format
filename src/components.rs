@@ -1,7 +1,7 @@
 use crate::*;
 
 /// Components of a floating point number.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Components {
     /// The sign of the number, `Some(true)` if negative, `None` if the format is unsigned.
     pub sign: Option<bool>,
@@ -59,7 +59,7 @@ impl Components {
     }
 
     /// Get the format of the components with the given `excess`.
-    pub fn format_with_excess(&self, excess: u64) -> Format {
+    pub fn format_with_excess(&self, excess: u16) -> Format {
         Format::new_with_sign(
             self.sign.is_some(),
             self.exp.len(),
@@ -69,7 +69,7 @@ impl Components {
     }
 
     /// Get the format of the components.
-    /// The excess value is default  to 0.
+    /// The excess value is default to 0.
     pub fn format(&self) -> Format {
         self.format_with_excess(0)
     }
@@ -77,5 +77,15 @@ impl Components {
     /// Get the number of bits for the format.
     pub fn len(&self) -> usize {
         self.sign.is_some() as usize + self.exp.len() + self.mant.len()
+    }
+}
+
+impl std::fmt::Debug for Components {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Components {{ sign: {}, exp: {}, mant: {} }}",
+            self.sign.map(|b| if b == true { "-" } else { "+" }).unwrap_or("None"),
+            self.exp.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>(),
+            self.mant.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>()
+        )
     }
 }

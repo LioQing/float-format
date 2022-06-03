@@ -14,12 +14,12 @@ pub struct Format {
 
     /// The excess (offset, biased) value for the exponent.
     /// This is the value that is subtracted from the exponent to get the actual exponent.
-    pub excess: u64,
+    pub excess: u16,
 }
 
 impl Format {
     /// Create from the given values for `exp`, `mant`, and `excess`, default to signed.
-    pub fn new(exp: usize, mant: usize, excess: u64) -> Format {
+    pub fn new(exp: usize, mant: usize, excess: u16) -> Format {
         Format {
             signed: true,
             exp,
@@ -29,7 +29,7 @@ impl Format {
     }
 
     /// Create from the given values for `exp`, `mant`, and `excess`, default to unsigned.
-    pub fn new_unsigned(exp: usize, mant: usize, excess: u64) -> Format {
+    pub fn new_unsigned(exp: usize, mant: usize, excess: u16) -> Format {
         Format {
             signed: false,
             exp,
@@ -39,7 +39,7 @@ impl Format {
     }
 
     /// Create from the given values for `signed`, `exp`, `mant`, and `excess`.
-    pub fn new_with_sign(signed: bool, exp: usize, mant: usize, excess: u64) -> Format {
+    pub fn new_with_sign(signed: bool, exp: usize, mant: usize, excess: u16) -> Format {
         Format {
             signed,
             exp,
