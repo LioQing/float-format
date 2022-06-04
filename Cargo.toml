@@ -1,7 +1,7 @@
 [package]
 name = "float-format"
 author = ["lioqing"]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "A library for custom floating point number format"
 keywords = ["float", "format", "layout", "custom", "number"]
@@ -12,8 +12,8 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitvec = "^1.0"
-thiserror = "^1.0"
-num-traits = "^0.2"
-derivative = "^2.2"
-fraction = { version = "^0.10", features = ["with-bigint"] }
+bitvec = "1.0.0"
+thiserror = "1.0.31"
+num-traits = "0.2.15"
+derivative = "2.2.0"
+fraction = { version = "0.10.0", features = ["with-bigint"] }

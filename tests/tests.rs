@@ -10,6 +10,8 @@ fn print_test() {
     println!("{:.8}", float);
 
     assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
+
+    #[cfg(target_pointer_width = "64")]
     assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);
 }
 
@@ -29,12 +31,14 @@ fn ieee_formats() {
 #[test]
 fn prim_float_types() {
     assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
-    assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);
-
     assert_eq!(Float::from(0.2f32).to_f32_raw(), 0.2f32);
-    assert_eq!(Float::from(0.2f64).to_f64_raw(), 0.2f64);
-
     assert_eq!(Float::from(0.2f32).to_f64(), 0.2f32 as f64);
+
+    #[cfg(target_pointer_width = "64")]
+    assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);
+    #[cfg(target_pointer_width = "64")]
+    assert_eq!(Float::from(0.2f64).to_f64_raw(), 0.2f64);
+    #[cfg(target_pointer_width = "64")]
     assert_eq!(Float::from(0.2f64).to_f32(), 0.2f64 as f32);
 }
 

@@ -313,6 +313,7 @@ impl From<f32> for Float {
 #[cfg(target_pointer_width = "64")]
 impl From<f64> for Float {
     /// Create from the given `f64`, using IEEE binary64 format.
+    /// Only available for 64 bit systems.
     fn from(f: f64) -> Float {
         let bits = f.to_bits();
         let format = Format::ieee_binary64();
