@@ -310,6 +310,7 @@ impl From<f32> for Float {
     }
 }
 
+#[cfg(target_pointer_width = "64")]
 impl From<f64> for Float {
     /// Create from the given `f64`, using IEEE binary64 format.
     fn from(f: f64) -> Float {
