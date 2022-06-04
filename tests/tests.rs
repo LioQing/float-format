@@ -3,14 +3,14 @@ use float_format::*;
 #[test]
 fn print_test() {
     let float = Float::from_str(
-        Format::new_ieee_excess(31, 64),
+        Format::new_ieee_excess(16, 64),
         "123456.789012345",
     ).unwrap();
     
-    assert_eq!(format!("{:.10}", float), "123456.789012345");
+    assert_eq!(format!("{:.8}", float), "123456.78901234");
 
     assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
-    assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);    
+    assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);
 }
 
 #[test]

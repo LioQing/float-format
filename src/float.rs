@@ -114,11 +114,12 @@ impl Float {
         let exp = exp + format.excess as i128;
 
         let signed = format.signed;
+        let width = format.exp;
         Self::from_fields(
             format,
             if signed { Some(sign) } else { None },
-            format!("0b0{:b}", exp).as_str(),
-            ("0b0".to_owned() + &int_bits + &frac_bits).as_str(),
+            format!("0b{:0width$b}", exp, width = width as usize).as_str(),
+            ("0b".to_owned() + &int_bits + &frac_bits).as_str(),
         )
     }
 
