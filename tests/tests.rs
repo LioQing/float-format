@@ -18,11 +18,14 @@ fn ieee_formats() {
 
 #[test]
 fn prim_float_types() {
-    assert_eq!(Float::from(0.2f32).as_f32(), 0.2f32);
-    assert_eq!(Float::from(0.2f64).as_f64(), 0.2f64);
+    assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
+    assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);
 
-    assert_eq!(Float::from(0.2f32).as_f64(), 0.2f32 as f64);
-    assert_eq!(Float::from(0.2f64).as_f32(), 0.2f64 as f32);
+    assert_eq!(Float::from(0.2f32).to_f32_raw(), 0.2f32);
+    assert_eq!(Float::from(0.2f64).to_f64_raw(), 0.2f64);
+
+    assert_eq!(Float::from(0.2f32).to_f64(), 0.2f32 as f64);
+    assert_eq!(Float::from(0.2f64).to_f32(), 0.2f64 as f32);
 }
 
 #[test]
@@ -42,8 +45,8 @@ fn radices() {
         BitPattern::from_str("0x4640e666").unwrap(),
     ).unwrap();
     
-    assert_eq!(bin.as_f32(), oct.as_f32());
-    assert_eq!(bin.as_f32(), hex.as_f32());
+    assert_eq!(bin.to_f32(), oct.to_f32());
+    assert_eq!(bin.to_f32(), hex.to_f32());
 }
 
 #[test]

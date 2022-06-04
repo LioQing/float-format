@@ -59,7 +59,7 @@ impl Components {
     }
 
     /// Get the format of the components with the given `excess`.
-    pub fn format_with_excess(&self, excess: u16) -> Format {
+    pub fn format_with_excess(&self, excess: i32) -> Format {
         Format::new_with_sign(
             self.sign.is_some(),
             self.exp.len(),

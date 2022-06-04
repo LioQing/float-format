@@ -1,5 +1,7 @@
 use crate::*;
-use fraction::prelude::*;
+use bitvec::field::BitField;
+use fraction::{prelude::*, Num, ToPrimitive};
+use num_traits;
 use core::str::FromStr;
 
 /// A floating point number, also contains the format information.
@@ -41,9 +43,9 @@ impl Float {
         let mut int_bits = String::new();
         let mut frac_bits = String::new();
 
-        let exp: i32 = match int > BigUint::from(0u32) {
+        let exp = match int > BigUint::from(0u32) {
             true => {
-                let mut exp = 0;
+                let mut exp = 0i128;
 
                 // get integral part
                 while int > BigUint::from(1u32) {
@@ -62,7 +64,7 @@ impl Float {
                 exp
             },
             false => {
-                let mut exp = 0;
+                let mut exp = 0i128;
 
                 // remove leading zeros of fraction
                 loop {
@@ -105,11 +107,11 @@ impl Float {
             }))
             .collect::<String>();
 
-        if exp < -(format.excess as i32) || exp >= 2i32.pow(format.exp as u32) - format.excess as i32 {
+        if exp < -(format.excess as i128) || exp >= ((1 << format.exp) - format.excess) as i128 {
             return Err(error::Error::OutOfRange);
         }
 
-        let exp = (exp + format.excess as i32) as u32;
+        let exp = exp + format.excess as i128;
 
         let signed = format.signed;
         Self::from_fields(
@@ -245,11 +247,11 @@ impl Float {
     
     /// Create a `f32` from the given `Float`.
     /// The result may has a lost of information.
-    pub fn as_f32(&self) -> f32 {
+    pub fn to_f32(&self) -> f32 {
         let Components { sign, exp, mant } = self.to_comps();
 
-        let exp = i32::from_str_radix(&exp.into_bin_string(), 2).unwrap();
-        let mant = u128::from_str_radix(&mant.into_bin_string(), 2).unwrap();
+        let exp = i64::from_str_radix(&exp.into_bin_string(), 2).unwrap();
+        let mant = BigUint::from_str_radix(&mant.into_bin_string(), 2).unwrap();
 
         let sign = match sign {
             Some(true) => -1f32,
@@ -257,19 +259,19 @@ impl Float {
             None => 1f32,
         };
 
-        let exp = 2f32.powi((exp - self.format.excess as i32) as i32);
-        let mant = mant as f32 / num_traits::pow(2f32, self.format.mant) + 1f32;
+        let exp = 2f32.powi((exp - self.format.excess as i64) as i32);
+        let mant = mant.to_f32().unwrap() / num_traits::pow(2f32, self.format.mant) + 1f32;
 
         sign * exp * mant
     }
 
     /// Create a `f64` from the given `Float`.
     /// The result may has a lost of information.
-    pub fn as_f64(&self) -> f64 {
+    pub fn to_f64(&self) -> f64 {
         let Components { sign, exp, mant } = self.to_comps();
 
-        let exp = i32::from_str_radix(&exp.into_bin_string(), 2).unwrap();
-        let mant = u128::from_str_radix(&mant.into_bin_string(), 2).unwrap();
+        let exp = i64::from_str_radix(&exp.into_bin_string(), 2).unwrap();
+        let mant = BigUint::from_str_radix(&mant.into_bin_string(), 2).unwrap();
 
         let sign = match sign {
             Some(true) => -1f64,
@@ -277,10 +279,22 @@ impl Float {
             None => 1f64,
         };
 
-        let exp = 2f64.powi((exp - self.format.excess as i32) as i32);
-        let mant = mant as f64 / num_traits::pow(2f64, self.format.mant) + 1f64;
+        let exp = 2f64.powi((exp - self.format.excess as i64) as i32);
+        let mant = mant.to_f64().unwrap() / num_traits::pow(2f64, self.format.mant) + 1f64;
 
         sign * exp * mant
+    }
+    
+    /// Create a `f32` from the given `Float`.
+    /// Raw transmutation from the bit pattern.
+    pub fn to_f32_raw(&self) -> f32 {
+        f32::from_bits(self.bits.load_le::<u32>())
+    }
+
+    /// Create a `f64` from the given `Float`.
+    /// Raw transmutation from the bit pattern.
+    pub fn to_f64_raw(&self) -> f64 {
+        f64::from_bits(self.bits.load_le::<u64>())
     }
 }
 
@@ -314,11 +328,11 @@ impl std::fmt::Display for Float {
 
         // exp
         let exp =
-            (i64::from_str_radix(&comps.exp.into_bin_string(), 2).unwrap() - self.format.excess as i64) as i32;
+            BigInt::from_str_radix(&comps.exp.into_bin_string(), 2).unwrap() - self.format.excess.clone();
 
-        let exp = match exp < 0 {
-            true => BigFraction::new(BigUint::from(1u32), BigUint::from(2u32) << (-exp as usize - 1)),
-            false => BigFraction::from(BigUint::from(1u32) << (exp as usize)),
+        let exp = match exp < BigInt::from(0i32) {
+            true => BigFraction::new(BigUint::from(1u32), BigUint::from(2u32) << ((-exp).to_usize().unwrap() - 1)),
+            false => BigFraction::from(BigUint::from(1u32) << exp.to_usize().unwrap()),
         };
 
         // mant

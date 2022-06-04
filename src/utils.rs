@@ -1,6 +1,11 @@
 use crate::*;
 use bitvec::prelude::*;
 
+pub trait IeeeBinary {
+    fn ieee_binary32() -> Self;
+    fn ieee_binary64() -> Self;
+}
+
 pub type BitPattern = BitVec<usize, Msb0>;
 
 pub trait BitPatternExt where Self: Sized {
