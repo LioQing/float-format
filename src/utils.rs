@@ -6,6 +6,44 @@ pub trait IeeeBinary {
     fn ieee_binary64() -> Self;
 }
 
+/// Special interpretation of bit patterns for special values.
+/// This function is called during output.
+pub type Interpret = fn(&Components) -> Option<String>;
+
+fn ieee_interpret(comps: &Components) -> Option<String> {
+    match comps {
+        c if c.sign == Some(false) && c.exp.is_all_zero() && c.mant.is_all_zero() => {
+            Some("0".to_owned())
+        },
+        c if c.sign == Some(true) && c.exp.is_all_zero() && c.mant.is_all_zero() => {
+            Some("-0".to_owned())
+        },
+        c if c.sign == Some(false) && c.exp.is_all_one() && c.mant.is_all_zero() => {
+            Some("inf".to_owned())
+        },
+        c if c.sign == Some(true) && c.exp.is_all_one() && c.mant.is_all_zero() => {
+            Some("-inf".to_owned())
+        },
+        c if c.exp.is_all_one() && !c.mant.is_all_zero() && c.mant.iter().next().map(|b| *b) == Some(true) => {
+            Some("NaN".to_owned())
+        },
+        c if c.exp.is_all_one() && !c.mant.is_all_zero() && c.mant.iter().next().map(|b| *b) == Some(false) => {
+            Some("sNaN".to_owned())
+        },
+        _ => None,
+    }
+}
+
+impl IeeeBinary for Interpret {
+    fn ieee_binary32() -> Self {
+        ieee_interpret
+    }
+
+    fn ieee_binary64() -> Self {
+        ieee_interpret
+    }
+}
+
 pub type BitPattern = BitVec<usize, Msb0>;
 
 pub trait BitPatternExt where Self: Sized {
@@ -17,6 +55,9 @@ pub trait BitPatternExt where Self: Sized {
     fn from_bin_str(s: &str) -> Result<Self, error::Error>;
     fn from_oct_str(s: &str) -> Result<Self, error::Error>;
     fn from_hex_str(s: &str) -> Result<Self, error::Error>;
+    
+    fn is_all_one(&self) -> bool;
+    fn is_all_zero(&self) -> bool;
 
     fn to_bin_string(&self) -> String;
     fn into_bin_string(self) -> String;
@@ -76,6 +117,14 @@ impl BitPatternExt for BitPattern {
             .map(|c| c == '1')
             .collect()
         )
+    }
+
+    fn is_all_one(&self) -> bool {
+        self.iter().all(|b| *b)
+    }
+
+    fn is_all_zero(&self) -> bool {
+        self.iter().all(|b| !*b)
     }
     
     fn to_bin_string(&self) -> String {

@@ -1,7 +1,8 @@
 use super::*;
 
 /// Format of the float, storing the number of bit for each fields.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(derivative::Derivative, Clone)]
+#[derivative(Debug)]
 pub struct Format {
     /// Whether the float is signed or not, if true a bit will be assigned for the sign.
     pub signed: bool,
@@ -16,6 +17,9 @@ pub struct Format {
     /// The excess (offset, biased) value for the exponent.
     /// This is the value that is subtracted from the exponent to get the actual exponent.
     pub excess: u32,
+
+    #[derivative(Debug = "ignore")]
+    pub interpret: Interpret,
 }
 
 impl Format {
@@ -30,6 +34,7 @@ impl Format {
             exp,
             mant,
             excess,
+            interpret: |_| None,
         }
     }
 
@@ -44,6 +49,7 @@ impl Format {
             exp,
             mant,
             excess,
+            interpret: |_| None,
         }
     }
 
@@ -58,6 +64,7 @@ impl Format {
             exp,
             mant,
             excess,
+            interpret: |_| None,
         }
     }
 
@@ -73,6 +80,7 @@ impl Format {
             exp,
             mant,
             excess: (1 << (exp - 1)) - 1,
+            interpret: |_| None,
         }
     }
 
@@ -88,6 +96,7 @@ impl Format {
             exp,
             mant,
             excess: (1 << (exp - 1)) - 1,
+            interpret: |_| None,
         }
     }
 
@@ -100,11 +109,17 @@ impl Format {
 impl IeeeBinary for Format {
     /// The exponent is 8 bits and biased by 127, and the mantissa is 23 bits.
     fn ieee_binary32() -> Self {
-        Format::new(8, 23, 127)
+        Self {
+            interpret: Interpret::ieee_binary32(),
+            ..Self::new(8, 23, 127)
+        }
     }
     
     /// The exponent is 11 bits and biased by 1023, and the mantissa is 52 bits.
     fn ieee_binary64() -> Self {
-        Format::new(11, 52, 1023)
+        Self {
+            interpret: Interpret::ieee_binary64(),
+            ..Self::new(11, 52, 1023)
+        }
     }
 }

@@ -4,10 +4,10 @@ use float_format::*;
 fn print_test() {
     let float = Float::from_str(
         Format::new_ieee_excess(16, 64),
-        "123456.789012345",
+        "-0",
     ).unwrap();
-    
-    assert_eq!(format!("{:.8}", float), "123456.78901234");
+
+    println!("{:.8}", float);
 
     assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
     assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);
@@ -15,8 +15,15 @@ fn print_test() {
 
 #[test]
 fn ieee_formats() {
-    assert_eq!(Format::ieee_binary32(), Format::new(8, 23, 127));
-    assert_eq!(Format::ieee_binary64(), Format::new(11, 52, 1023));
+    assert!(matches!(
+        Format::ieee_binary32(),
+        Format{ signed: true, exp: 8, mant: 23, excess: 127, .. },
+    ));
+    
+    assert!(matches!(
+        Format::ieee_binary64(),
+        Format{ signed: true, exp: 11, mant: 52, excess: 1023, .. },
+    ));
 }
 
 #[test]

@@ -1,11 +1,10 @@
 use crate::*;
 use bitvec::field::BitField;
 use fraction::{prelude::*, Num, ToPrimitive};
-use num_traits;
 use core::str::FromStr;
 
 /// A floating point number, also contains the format information.
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct Float {
     pub format: Format,
     pub bits: BitPattern,
@@ -44,6 +43,9 @@ impl Float {
         let mut frac_bits = String::new();
 
         let exp = match int > BigUint::from(0u32) {
+            false if frac == BigFraction::from(0u32) => {
+                -(format.excess as i128)
+            },
             true => {
                 let mut exp = 0i128;
 
@@ -320,6 +322,10 @@ impl From<f64> for Float {
 impl std::fmt::Display for Float {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let comps = self.to_comps();
+
+        if let Some(s) = (self.format.interpret)(&comps) {
+            return write!(f, "{}", s);
+        }
 
         // sign
         let sign = match comps.sign {
