@@ -59,12 +59,12 @@ impl Components {
     }
 
     /// Get the format of the components with the given `excess`.
-    pub fn format_with_excess(&self, excess: i32) -> Format {
+    pub fn format_with_excess(&self, excess: u32) -> Format {
         Format::new_with_sign(
             self.sign.is_some(),
-            self.exp.len(),
+            self.exp.len() as u8,
             self.mant.len(),
-            excess
+            excess,
         )
     }
 
@@ -85,7 +85,7 @@ impl std::fmt::Debug for Components {
         write!(f, "Components {{ sign: {}, exp: {}, mant: {} }}",
             self.sign.map(|b| if b == true { "-" } else { "+" }).unwrap_or("None"),
             self.exp.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>(),
-            self.mant.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>()
+            self.mant.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>(),
         )
     }
 }

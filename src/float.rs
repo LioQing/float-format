@@ -176,16 +176,16 @@ impl Float {
         let mant = comps.mant.into_iter();
 
         if comps_format.exp < format.exp {
-            bits.extend(std::iter::repeat(false).take(format.exp - comps_format.exp));
+            bits.extend(std::iter::repeat(false).take((format.exp - comps_format.exp) as usize));
             bits.extend(exp);
         } else if exp
             .clone()
-            .take(comps_format.exp - format.exp)
+            .take((comps_format.exp - format.exp) as usize)
             .any(|b| b == true)
         {
             return Err(error::Error::InsufficientExponentBits);
         } else {
-            bits.extend(exp.skip(comps_format.exp - format.exp));
+            bits.extend(exp.skip((comps_format.exp - format.exp) as usize));
         }
 
         if comps_format.mant < format.mant {

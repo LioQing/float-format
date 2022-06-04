@@ -2,12 +2,15 @@ use float_format::*;
 
 #[test]
 fn print_test() {
-    let float = Float::from_str(Format::ieee_binary32(), "123456").unwrap();
+    let float = Float::from_str(
+        Format::new_ieee_excess(31, 64),
+        "123456.789012345",
+    ).unwrap();
+    
+    assert_eq!(format!("{:.10}", float), "123456.789012345");
 
-    println!("{}", float);
-
-    println!("{}", 123456f32);
-    println!("{:b}", 123456f32.to_bits());
+    assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
+    assert_eq!(Float::from(0.2f64).to_f64(), 0.2f64);    
 }
 
 #[test]
