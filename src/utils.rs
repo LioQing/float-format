@@ -1,6 +1,8 @@
 use crate::*;
 use bitvec::prelude::*;
+use fraction::{prelude::*, Num};
 
+/// Trait for structure that have an IEEE binary standard form.
 pub trait IeeeBinary {
     fn ieee_binary32() -> Self;
     fn ieee_binary64() -> Self;
@@ -10,6 +12,7 @@ pub trait IeeeBinary {
 /// This function is called during output.
 pub type Interpret = fn(&Components) -> Option<String>;
 
+/// Function to convert components to a string according to IEEE binary32 and binary64 format.
 fn ieee_interpret(comps: &Components) -> Option<String> {
     match comps {
         c if c.sign == Some(false) && c.exp.is_all_zero() && c.mant.is_all_zero() => {
@@ -52,15 +55,18 @@ pub trait BitPatternExt where Self: Sized {
         T: BitStore;
 
     fn from_str(s: &str) -> Result<Self, error::Error>;
-    fn from_bin_str(s: &str) -> Result<Self, error::Error>;
-    fn from_oct_str(s: &str) -> Result<Self, error::Error>;
-    fn from_hex_str(s: &str) -> Result<Self, error::Error>;
+    fn from_bin_str(s: &str) -> Self;
+    fn from_dec_str(s: &str) -> Self;
+    fn from_oct_str(s: &str) -> Self;
+    fn from_hex_str(s: &str) -> Self;
     
     fn is_all_one(&self) -> bool;
     fn is_all_zero(&self) -> bool;
 
     fn to_bin_string(&self) -> String;
-    fn into_bin_string(self) -> String;
+    fn to_oct_string(&self) -> String;
+    fn to_dec_string(&self) -> String;
+    fn to_hex_string(&self) -> String;
 }
 
 impl BitPatternExt for BitPattern {
@@ -77,24 +83,43 @@ impl BitPatternExt for BitPattern {
         }
 
         match s[0..2].as_ref() {
-            "0b" => Ok(Self::from_bin_str(&s[2..])?),
-            "0o" => Ok(Self::from_oct_str(&s[2..])?),
-            "0x" => Ok(Self::from_hex_str(&s[2..])?),
+            "0b" => Ok(Self::from_bin_str(&s[2..])),
+            "0o" => Ok(Self::from_oct_str(&s[2..])),
+            "0d" => Ok(Self::from_dec_str(&s[2..])),
+            "0x" => Ok(Self::from_hex_str(&s[2..])),
             _ => Err(error::Error::InvalidRadixPrefix),
         }
     }
     
-    fn from_bin_str(s: &str) -> Result<Self, error::Error> {
-        Ok(s
+    fn from_bin_str(s: &str) -> Self {
+        s
             .chars()
             .filter(|c| c.is_digit(2))
             .map(|c| c == '1')
             .collect()
-        )
     }
 
-    fn from_oct_str(s: &str) -> Result<Self, error::Error> {
-        Ok(s
+    fn from_dec_str(s: &str) -> Self {
+        let s = s.chars().filter(|c| c.is_digit(10)).collect::<String>();
+
+        let mut int = BigUint::from_str_radix(&s, 10).unwrap();
+        let mut bits = String::new();
+
+        while int > BigUint::from(0u32) {
+            bits.push(if int.clone() % BigUint::from(2u32) == BigUint::from(1u32) { '1' } else { '0' });
+            int /= 2u32;
+        }
+
+        let bits = bits
+            .chars()
+            .rev()
+            .collect::<String>();
+
+        Self::from_bin_str(&bits)
+    }
+
+    fn from_oct_str(s: &str) -> Self {
+        s
             .chars()
             .filter(|c| c.is_digit(8))
             .flat_map(|c| format!("{:3b}", c.to_digit(8).unwrap())
@@ -103,11 +128,10 @@ impl BitPatternExt for BitPattern {
             )
             .map(|c| c == '1')
             .collect()
-        )
     }
     
-    fn from_hex_str(s: &str) -> Result<Self, error::Error> {
-        Ok(s
+    fn from_hex_str(s: &str) -> Self {
+        s
             .chars()
             .filter(|c| c.is_digit(16))
             .flat_map(|c| format!("{:4b}", c.to_digit(16).unwrap())
@@ -116,7 +140,6 @@ impl BitPatternExt for BitPattern {
             )
             .map(|c| c == '1')
             .collect()
-        )
     }
 
     fn is_all_one(&self) -> bool {
@@ -130,14 +153,38 @@ impl BitPatternExt for BitPattern {
     fn to_bin_string(&self) -> String {
         self
             .iter()
-            .map(|b| if b == true { '1' } else { '0' })
+            .map(|b| if *b { '1' } else { '0' })
             .collect()
     }
     
-    fn into_bin_string(self) -> String {
+    fn to_oct_string(&self) -> String {
         self
-            .into_iter()
-            .map(|b| if b == true { '1' } else { '0' })
+            .as_bitslice()
+            .chunks(3)
+            .map(|c| format!("{:o}", c)
+                .chars()
+                .filter(|c| c.is_digit(8))
+                .collect::<String>()
+            )
+            .collect()
+    }
+
+    fn to_dec_string(&self) -> String {
+        self
+            .iter()
+            .fold(BigUint::from(0u32), |acc, b| acc * 2u32 + if *b { 1u32 } else { 0u32 })
+            .to_string()
+    }
+
+    fn to_hex_string(&self) -> String {
+        self
+            .as_bitslice()
+            .chunks(4)
+            .map(|c| format!("{:x}", c)
+                .chars()
+                .filter(|c| c.is_digit(16))
+                .collect::<String>()
+            )
             .collect()
     }
 }

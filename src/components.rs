@@ -31,8 +31,8 @@ impl Components {
     pub fn new_bin(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
             sign,
-            exp: BitPattern::from_bin_str(exp)?,
-            mant: BitPattern::from_bin_str(mant)?,
+            exp: BitPattern::from_bin_str(exp),
+            mant: BitPattern::from_bin_str(mant),
         })
     }
 
@@ -42,8 +42,8 @@ impl Components {
     pub fn new_oct(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
             sign,
-            exp: BitPattern::from_oct_str(exp)?,
-            mant: BitPattern::from_oct_str(mant)?,
+            exp: BitPattern::from_oct_str(exp),
+            mant: BitPattern::from_oct_str(mant),
         })
     }
 
@@ -53,8 +53,8 @@ impl Components {
     pub fn new_hex(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
             sign,
-            exp: BitPattern::from_hex_str(exp)?,
-            mant: BitPattern::from_hex_str(mant)?,
+            exp: BitPattern::from_hex_str(exp),
+            mant: BitPattern::from_hex_str(mant),
         })
     }
 
@@ -82,10 +82,10 @@ impl Components {
 
 impl std::fmt::Debug for Components {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Components {{ sign: {}, exp: {}, mant: {} }}",
-            self.sign.map(|b| if b == true { "-" } else { "+" }).unwrap_or("None"),
-            self.exp.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>(),
-            self.mant.iter().map(|b| if b == true { '1' } else { '0' }).collect::<String>(),
-        )
+        f.debug_struct("Components")
+            .field("sign", &format_args!("{}", &self.sign.map(|b| if b { "-" } else { "+" }).unwrap_or("None")))
+            .field("exp", &format_args!("{}", &self.exp.to_bin_string()))
+            .field("mant", &format_args!("{}", &self.mant.to_bin_string()))
+            .finish()
     }
 }

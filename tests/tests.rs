@@ -16,19 +16,6 @@ fn print_test() {
 }
 
 #[test]
-fn ieee_formats() {
-    assert!(matches!(
-        Format::ieee_binary32(),
-        Format{ signed: true, exp: 8, mant: 23, excess: 127, .. },
-    ));
-    
-    assert!(matches!(
-        Format::ieee_binary64(),
-        Format{ signed: true, exp: 11, mant: 52, excess: 1023, .. },
-    ));
-}
-
-#[test]
 fn prim_float_types() {
     assert_eq!(Float::from(0.2f32).to_f32(), 0.2f32);
     assert_eq!(Float::from(0.2f32).to_f32_raw(), 0.2f32);

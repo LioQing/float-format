@@ -253,8 +253,8 @@ impl Float {
     pub fn to_f32(&self) -> f32 {
         let Components { sign, exp, mant } = self.to_comps();
 
-        let exp = i64::from_str_radix(&exp.into_bin_string(), 2).unwrap();
-        let mant = BigUint::from_str_radix(&mant.into_bin_string(), 2).unwrap();
+        let exp = i64::from_str_radix(&exp.to_bin_string(), 2).unwrap();
+        let mant = BigUint::from_str_radix(&mant.to_bin_string(), 2).unwrap();
 
         let sign = match sign {
             Some(true) => -1f32,
@@ -273,8 +273,8 @@ impl Float {
     pub fn to_f64(&self) -> f64 {
         let Components { sign, exp, mant } = self.to_comps();
 
-        let exp = i64::from_str_radix(&exp.into_bin_string(), 2).unwrap();
-        let mant = BigUint::from_str_radix(&mant.into_bin_string(), 2).unwrap();
+        let exp = i64::from_str_radix(&exp.to_bin_string(), 2).unwrap();
+        let mant = BigUint::from_str_radix(&mant.to_bin_string(), 2).unwrap();
 
         let sign = match sign {
             Some(true) => -1f64,
@@ -337,7 +337,7 @@ impl std::fmt::Display for Float {
 
         // exp
         let exp =
-            BigInt::from_str_radix(&comps.exp.into_bin_string(), 2).unwrap() - self.format.excess.clone();
+            BigInt::from_str_radix(&comps.exp.to_bin_string(), 2).unwrap() - self.format.excess.clone();
 
         let exp = match exp < BigInt::from(0i32) {
             true => BigFraction::new(BigUint::from(1u32), BigUint::from(2u32) << ((-exp).to_usize().unwrap() - 1)),
@@ -350,7 +350,7 @@ impl std::fmt::Display for Float {
             .fold((BigUint::from(0u32), BigUint::from(0u32)),
                 |(numer, denom), b| {
                     (
-                        numer * 2u32 + if b == true { 1u32 } else { 0u32 },
+                        numer * 2u32 + if *b { 1u32 } else { 0u32 },
                         denom * 2u32 + 1u32,
                     )
                 }

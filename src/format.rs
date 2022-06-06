@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 
 /// Format of the float, storing the number of bit for each fields.
 #[derive(derivative::Derivative, Clone)]
