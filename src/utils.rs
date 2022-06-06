@@ -54,18 +54,43 @@ pub trait BitPatternExt where Self: Sized {
     where
         T: BitStore;
 
+    /// Create from the given string.
+    /// The radix is deduced from the first 2 chars.
+    /// '0b' => binary, '0x' => hexadecimal, '0o' => octal, '0d' => decimal.
     fn from_str(s: &str) -> Result<Self, error::Error>;
+
+    /// Create from the given binary string.
+    /// Any character other than '0' or '1' is ignored.
     fn from_bin_str(s: &str) -> Self;
+
+    /// Create from the given decimal string.
+    /// Any character other than decimal digits is ignored.
     fn from_dec_str(s: &str) -> Self;
+    
+    /// Create from the given octal string.
+    /// Any character other than octal digits is ignored.
     fn from_oct_str(s: &str) -> Self;
+    
+    /// Create from the given hexadecimal string.
+    /// Any character other than hexadecimal digits is ignored.
     fn from_hex_str(s: &str) -> Self;
     
+    /// Check if the bit pattern is all one.
     fn is_all_one(&self) -> bool;
+
+    /// Check if the bit pattern is all zero.
     fn is_all_zero(&self) -> bool;
 
+    /// Convert the bit pattern to a string representing the binary value.
     fn to_bin_string(&self) -> String;
+
+    /// Convert the bit pattern to a string representing the decimal value.
     fn to_oct_string(&self) -> String;
+
+    /// Convert the bit pattern to a string representing the hexadecimal value.
     fn to_dec_string(&self) -> String;
+
+    /// Convert the bit pattern to a string representing the hexadecimal value.
     fn to_hex_string(&self) -> String;
 }
 

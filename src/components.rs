@@ -16,7 +16,7 @@ pub struct Components {
 impl Components {
     /// Create from the given values for `sign`, `exp`, and `mant`.
     /// The radix of `exp` and `mant` is deduced from the first 2 chars.
-    /// '0b' => binary, '0x' => hexadecimal, '0o' => octal.
+    /// '0b' => binary, '0x' => hexadecimal, '0o' => octal, '0d' => decimal.
     pub fn new(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
             sign,
@@ -26,7 +26,7 @@ impl Components {
     }
 
     /// Create from the given values for `sign`, `exp`, and `mant`.
-    /// The `exp` and `mant` should be `String` with '1's and '0's.
+    /// The `exp` and `mant` should be string with '1's and '0's.
     /// Any characters other than '0' and '1' are ignored.
     pub fn new_bin(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
@@ -37,7 +37,7 @@ impl Components {
     }
 
     /// Create from the given values for `sign`, `exp`, and `mant`.
-    /// The `exp` and `mant` should be `String` with octal digits.
+    /// The `exp` and `mant` should be string with octal digits.
     /// Any characters other than octal digits are ignored.
     pub fn new_oct(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
@@ -48,7 +48,18 @@ impl Components {
     }
 
     /// Create from the given values for `sign`, `exp`, and `mant`.
-    /// The `exp` and `mant` should be `String` with hexadecimal digits.
+    /// The `exp` and `mant` should be string with decimal digits.
+    /// Any characters other than decimal digits are ignored.
+    pub fn new_dec(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
+        Ok(Components {
+            sign,
+            exp: BitPattern::from_dec_str(exp),
+            mant: BitPattern::from_dec_str(mant),
+        })
+    }
+
+    /// Create from the given values for `sign`, `exp`, and `mant`.
+    /// The `exp` and `mant` should be string with hexadecimal digits.
     /// Any characters other than hexadecimal digits are ignored.
     pub fn new_hex(sign: Option<bool>, exp: &str, mant: &str) -> Result<Self, error::Error> {
         Ok(Components {
