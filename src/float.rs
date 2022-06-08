@@ -4,7 +4,7 @@ use fraction::{prelude::*, Num, ToPrimitive};
 use core::str::FromStr;
 
 /// A floating point number, also contains the format information.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Float {
     pub format: Format,
     pub bits: BitPattern,
@@ -228,6 +228,15 @@ impl Float {
         Float::from_comps(
             format,
             comps
+        )
+    }
+
+    /// Get the start indices of exponent and mantissa.
+    /// 0th element is the start index of exponent, 1st element is the start index of mantissa.
+    pub fn get_start_indices(&self) -> (usize, usize) {
+        (
+            self.format.signed as usize,
+            self.format.signed as usize + self.format.exp as usize,
         )
     }
     

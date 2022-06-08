@@ -2,7 +2,7 @@ use crate::*;
 
 /// Format of the float, storing the number of bit for each fields.
 #[derive(derivative::Derivative, Clone)]
-#[derivative(Debug)]
+#[derivative(Debug, PartialEq, Eq)]
 pub struct Format {
     /// Whether the float is signed or not, if true a bit will be assigned for the sign.
     pub signed: bool,
@@ -18,7 +18,7 @@ pub struct Format {
     /// This is the value that is subtracted from the exponent to get the actual exponent.
     pub excess: u32,
 
-    #[derivative(Debug = "ignore")]
+    #[derivative(Debug = "ignore", PartialEq = "ignore")]
     pub interpret: Interpret,
 }
 

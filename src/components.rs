@@ -89,6 +89,11 @@ impl Components {
     pub fn len(&self) -> usize {
         self.sign.is_some() as usize + self.exp.len() + self.mant.len()
     }
+
+    /// Get the sign bit as a str of ether '1' or '0'.
+    pub fn get_sign(&self) -> Option<&str> {
+        self.sign.as_ref().map(|s| if *s { "1" } else { "0" })
+    }
 }
 
 impl std::fmt::Debug for Components {
